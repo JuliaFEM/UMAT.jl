@@ -1,6 +1,11 @@
+# This file is a part of JuliaFEM.
+# License is MIT: see https://github.com/JuliaFEM/UMAT.jl/blob/master/LICENSE
+
 module UMAT
 
 using Libdl
+using Materials
+using Parameters
 using LinearAlgebra
 
 # These numbers are specific to the chosen umat
@@ -138,4 +143,5 @@ function integrate_material!(material::UmatMaterial)
     material.variables_new = variables_new
 end
 
+export UmatMaterial, UmatDriverState, UmatParameterState, UmatVariableState, UmatOtherState
 end # module
