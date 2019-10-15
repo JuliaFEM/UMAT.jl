@@ -162,7 +162,7 @@ function Materials.reset_material!(material::UmatMaterial)
     return nothing
 end
 
-include("umat_models.jl")
+include("gurson_model.jl")
 
 export UmatMaterial, UmatDriverState, UmatParameterState, UmatVariableState, UmatOtherState
 end # module
