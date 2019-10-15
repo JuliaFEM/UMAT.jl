@@ -11,7 +11,7 @@ else
 end
 
 E = 160e9; NU = 0.3; SYIELD = 100
-parameters = UmatParameterState([E, NU, SYIELD])
-material = UmatMaterial(parameters=parameters,
+#parameters = UmatParameterState(NPROPS=3,[E, NU, SYIELD])
+material = UmatMaterial(NTENS=6, NSTATV=0, NPROPS=3,
                         lib_path=joinpath(lib_dir,"libmises_umat." * dlext),
                         behaviour=:mises_umat_)

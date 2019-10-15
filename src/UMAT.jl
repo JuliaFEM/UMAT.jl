@@ -32,6 +32,9 @@ Variables updated by UMAT routine.
     DRPLDE :: Array{Float64,1} = zeros(Float64, NTENS)
     DRPLDT :: Array{Float64,1} = zeros(Float64, 1)
     PNEWDT :: Array{Float64,1} = ones(Float64, 1)
+
+    NTENS :: Integer
+    NSTATV :: Integer
 end
 
 """
@@ -39,6 +42,8 @@ Material parameters in order that is specific to chosen UMAT.
 """
 @with_kw struct UmatParameterState <: AbstractMaterialState
     PROPS :: Array{Float64,1} = zeros(Float64, NPROPS)
+
+    NPROPS :: Integer
 end
 
 """
@@ -50,6 +55,8 @@ These drive evolution of the material state.
     TIME :: Array{Float64,1} = zeros(Float64, 2)
     TEMP :: Float64 = zero(Float64)
     PREDEF :: Float64 = zero(Float64)
+
+    NTENS :: Integer
 end
 
 """
@@ -59,9 +66,9 @@ Other Abaqus UMAT variables passed in for information.
     CMNAME :: Cuchar = 'U'
     NDI :: Int64 = 3
     NSHR :: Int64 = 3
-    NTENS :: Int64 = NTENS # NDI + NSHR
-    NSTATV :: Int64 = NSTATV #zero(Int64)
-    NPROPS :: Int64 = NPROPS #zero(Int64)
+    NTENS :: Int64  # NDI + NSHR
+    NSTATV :: Int64
+    NPROPS :: Int64
     COORDS :: Array{Float64,1} = zeros(Float64, 3)
     DROT :: Array{Float64,2} = I + zeros(Float64, 3, 3)
     CELENT :: Float64 = zero(Float64)
@@ -85,18 +92,23 @@ UMAT material structure.
     MFront Abaqus interface produces specific name, e.g. `ELASTICITY_3D`.
 """
 @with_kw mutable struct UmatMaterial <: AbstractMaterial
-    drivers :: UmatDriverState = UmatDriverState()
-    ddrivers :: UmatDriverState = UmatDriverState()
-    variables :: UmatVariableState = UmatVariableState()
-    variables_new :: UmatVariableState = UmatVariableState()
-    parameters :: UmatParameterState = UmatParameterState()
-    dparameters :: UmatParameterState = UmatParameterState()
+    drivers :: UmatDriverState = UmatDriverState(NTENS=NTENS)
+    ddrivers :: UmatDriverState = UmatDriverState(NTENS=NTENS)
+    variables :: UmatVariableState = UmatVariableState(NTENS=NTENS, NSTATV=NSTATV)
+    variables_new :: UmatVariableState = UmatVariableState(NTENS=NTENS, NSTATV=NSTATV)
+    parameters :: UmatParameterState = UmatParameterState(NPROPS=NPROPS)
+    dparameters :: UmatParameterState = UmatParameterState(NPROPS=NPROPS)
 
-    umat_other :: UmatOtherState = UmatOtherState()
+    umat_other :: UmatOtherState = UmatOtherState(NTENS=NTENS, NSTATV=NSTATV, NPROPS=NPROPS)
 
     lib_path :: String
     behaviour :: Symbol = :umat_
+
+    NTENS :: Integer
+    NSTATV :: Integer
+    NPROPS :: Integer
 end
+
 
 """
 Wrapper function to ccall the UMAT subroutine from the compiled shared library.
@@ -139,9 +151,18 @@ function integrate_material!(material::UmatMaterial)
         NTENS, NSTATV, PROPS, NPROPS, COORDS, DROT, PNEWDT, CELENT, DFGRD0, DFGRD1,
         NOEL, NPT, LAYER, KSPT, KSTEP, KINC)
 
-    variables_new = UmatVariableState(STRESS=STRESS,STATEV=STATEV,DDSDDE=DDSDDE,SSE=SSE,SPD=SPD,SCD=SCD,RPL=RPL,DDSDDT=DDSDDT,DRPLDE=DRPLDE,DRPLDT=DRPLDT,PNEWDT=PNEWDT)
+    variables_new = UmatVariableState(NSTATV=NSTATV,NTENS=NTENS,STRESS=STRESS,STATEV=STATEV,DDSDDE=DDSDDE,SSE=SSE,SPD=SPD,SCD=SCD,RPL=RPL,DDSDDT=DDSDDT,DRPLDE=DRPLDE,DRPLDT=DRPLDT,PNEWDT=PNEWDT)
     material.variables_new = variables_new
 end
+
+function Materials.reset_material!(material::UmatMaterial)
+    material.ddrivers = UmatDriverState(NTENS=NTENS)
+    material.dparameters = UmatParameterState(NPROPS=NPROPS)
+    material.variables_new = UmatVariableState(NTENS=NTENS, NSTATV=NSTATV)
+    return nothing
+end
+
+include("umat_models.jl")
 
 export UmatMaterial, UmatDriverState, UmatParameterState, UmatVariableState, UmatOtherState
 end # module
