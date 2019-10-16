@@ -13,8 +13,8 @@ using LinearAlgebra
 Variables updated by UMAT routine.
 """
 @with_kw struct UmatVariableState <: AbstractMaterialState
-    NTENS :: Int64
-    NSTATV :: Int64 = zero(Int64)
+    NTENS :: Int
+    NSTATV :: Int = zero(Int)
     DDSDDE :: Array{Float64,2} = zeros(Float64, NTENS, NTENS)
     STRESS :: Array{Float64,1} = zeros(Float64, NTENS)
     STATEV :: Array{Float64,1} = zeros(Float64, NSTATV)
@@ -32,7 +32,7 @@ end
 Material parameters in order that is specific to chosen UMAT.
 """
 @with_kw struct UmatParameterState <: AbstractMaterialState
-    NPROPS :: Int64 = zero(Int64)
+    NPROPS :: Int = zero(Int)
     PROPS :: Array{Float64,1} = zeros(Float64, NPROPS)
 end
 
@@ -41,7 +41,7 @@ Variables passed in for information.
 These drive evolution of the material state.
 """
 @with_kw struct UmatDriverState <: AbstractMaterialState
-    NTENS :: Int64
+    NTENS :: Int
     STRAN :: Array{Float64,1} = zeros(Float64, NTENS)
     TIME :: Array{Float64,1} = zeros(Float64, 2)
     TEMP :: Float64 = zero(Float64)
@@ -53,23 +53,23 @@ Other Abaqus UMAT variables passed in for information.
 """
 @with_kw struct UmatOtherState <: AbstractMaterialState
     CMNAME :: Cuchar = 'U'
-    NDI :: Int64 = 3
-    NSHR :: Int64 = 3
-    NTENS :: Int64  # NDI + NSHR
-    NSTATV :: Int64
-    NPROPS :: Int64
+    NDI :: Int = 3
+    NSHR :: Int = 3
+    NTENS :: Int  # NDI + NSHR
+    NSTATV :: Int
+    NPROPS :: Int
     COORDS :: Array{Float64,1} = zeros(Float64, 3)
     DROT :: Array{Float64,2} = I + zeros(Float64, 3, 3)
     CELENT :: Float64 = zero(Float64)
     DFGRD0 :: Array{Float64,2} = I + zeros(Float64, 3, 3)
     DFGRD1 :: Array{Float64,2} = I + zeros(Float64, 3, 3)
-    NOEL :: Int64 = zero(Int64)
-    NPT :: Int64 = zero(Int64)
-    LAYER :: Int64 = zero(Int64)
-    KSPT :: Int64 = zero(Int64)
-    JSTEP :: Array{Float64,1} = zeros(Int64, 3)
-    KSTEP :: Int64 = zero(Int64)
-    KINC :: Int64 = zero(Int64)
+    NOEL :: Int = zero(Int)
+    NPT :: Int = zero(Int)
+    LAYER :: Int = zero(Int)
+    KSPT :: Int = zero(Int)
+    JSTEP :: Array{Float64,1} = zeros(Int, 3)
+    KSTEP :: Int = zero(Int)
+    KINC :: Int = zero(Int)
 end
 
 """
@@ -81,9 +81,9 @@ UMAT material structure.
     MFront Abaqus interface produces specific name, e.g. `ELASTICITY_3D`.
 """
 @with_kw mutable struct UmatMaterial <: AbstractMaterial
-    NTENS :: Int64
-    NSTATV :: Int64 = zero(Int64)
-    NPROPS :: Int64 = zero(Int64)
+    NTENS :: Int
+    NSTATV :: Int = zero(Int)
+    NPROPS :: Int = zero(Int)
 
     drivers :: UmatDriverState = UmatDriverState(NTENS=NTENS)
     ddrivers :: UmatDriverState = UmatDriverState(NTENS=NTENS)
@@ -113,9 +113,9 @@ function call_umat!(func_umat::Symbol, lib_path::String, STRESS,STATEV,DDSDDE,SS
 
     ccall(sym_umat, Nothing,
         (Ref{Float64},Ref{Float64},Ref{Float64},Ref{Float64},Ref{Float64},Ref{Float64},Ref{Float64},Ref{Float64},Ref{Float64},Ref{Float64},
-        Ref{Float64},Ref{Float64},Ref{Float64},Ref{Float64},Ref{Float64},Ref{Float64},Ref{Float64},Ref{Float64},Ref{Cuchar},Ref{Int64},Ref{Int64},
-        Ref{Int64},Ref{Int64},Ref{Float64},Ref{Int64},Ref{Float64},Ref{Float64},Ref{Float64},Ref{Float64},Ref{Float64},Ref{Float64},
-        Ref{Int64},Ref{Int64},Ref{Int64},Ref{Int64},Ref{Int64},Ref{Int64}),
+        Ref{Float64},Ref{Float64},Ref{Float64},Ref{Float64},Ref{Float64},Ref{Float64},Ref{Float64},Ref{Float64},Ref{Cuchar},Ref{Int},Ref{Int},
+        Ref{Int},Ref{Int},Ref{Float64},Ref{Int},Ref{Float64},Ref{Float64},Ref{Float64},Ref{Float64},Ref{Float64},Ref{Float64},
+        Ref{Int},Ref{Int},Ref{Int},Ref{Int},Ref{Int},Ref{Int}),
         STRESS,STATEV,DDSDDE,SSE,SPD,SCD,RPL,DDSDDT,DRPLDE,DRPLDT,
         STRAN,DSTRAN,TIME,DTIME,TEMP,DTEMP,PREDEF,DPRED,CMNAME,NDI,NSHR,
         NTENS,NSTATV,PROPS,NPROPS,COORDS,DROT,PNEWDT,CELENT,DFGRD0,DFGRD1,
