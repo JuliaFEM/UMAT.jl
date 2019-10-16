@@ -21,6 +21,8 @@ using LinearAlgebra
 Variables updated by UMAT routine.
 """
 @with_kw struct UmatVariableState <: AbstractMaterialState
+    NTENS :: Integer
+    NSTATV :: Integer = 0
     DDSDDE :: Array{Float64,2} = zeros(Float64, NTENS, NTENS)
     STRESS :: Array{Float64,1} = zeros(Float64, NTENS)
     STATEV :: Array{Float64,1} = zeros(Float64, NSTATV)
@@ -32,18 +34,14 @@ Variables updated by UMAT routine.
     DRPLDE :: Array{Float64,1} = zeros(Float64, NTENS)
     DRPLDT :: Array{Float64,1} = zeros(Float64, 1)
     PNEWDT :: Array{Float64,1} = ones(Float64, 1)
-
-    NTENS :: Integer
-    NSTATV :: Integer
 end
 
 """
 Material parameters in order that is specific to chosen UMAT.
 """
 @with_kw struct UmatParameterState <: AbstractMaterialState
+    NPROPS :: Integer = 0
     PROPS :: Array{Float64,1} = zeros(Float64, NPROPS)
-
-    NPROPS :: Integer
 end
 
 """
@@ -51,12 +49,11 @@ Variables passed in for information.
 These drive evolution of the material state.
 """
 @with_kw struct UmatDriverState <: AbstractMaterialState
+    NTENS :: Integer
     STRAN :: Array{Float64,1} = zeros(Float64, NTENS)
     TIME :: Array{Float64,1} = zeros(Float64, 2)
     TEMP :: Float64 = zero(Float64)
     PREDEF :: Float64 = zero(Float64)
-
-    NTENS :: Integer
 end
 
 """
@@ -92,6 +89,10 @@ UMAT material structure.
     MFront Abaqus interface produces specific name, e.g. `ELASTICITY_3D`.
 """
 @with_kw mutable struct UmatMaterial <: AbstractMaterial
+    NTENS :: Integer
+    NSTATV :: Integer = 0
+    NPROPS :: Integer = 0
+
     drivers :: UmatDriverState = UmatDriverState(NTENS=NTENS)
     ddrivers :: UmatDriverState = UmatDriverState(NTENS=NTENS)
     variables :: UmatVariableState = UmatVariableState(NTENS=NTENS, NSTATV=NSTATV)
@@ -104,9 +105,6 @@ UMAT material structure.
     lib_path :: String
     behaviour :: Symbol = :umat_
 
-    NTENS :: Integer
-    NSTATV :: Integer
-    NPROPS :: Integer
 end
 
 
@@ -156,13 +154,13 @@ function integrate_material!(material::UmatMaterial)
 end
 
 function Materials.reset_material!(material::UmatMaterial)
-    material.ddrivers = UmatDriverState(NTENS=NTENS)
-    material.dparameters = UmatParameterState(NPROPS=NPROPS)
-    material.variables_new = UmatVariableState(NTENS=NTENS, NSTATV=NSTATV)
+    material.ddrivers = UmatDriverState(NTENS=material.NTENS)
+    material.dparameters = UmatParameterState(NPROPS=material.NPROPS)
+    material.variables_new = UmatVariableState(NTENS=material.NTENS, NSTATV=material.NSTATV)
     return nothing
 end
 
 include("gurson_model.jl")
 
-export UmatMaterial, UmatDriverState, UmatParameterState, UmatVariableState, UmatOtherState
+export UmatMaterial, UmatDriverState, UmatParameterState, UmatVariableState, UmatOtherState, GursonMaterial
 end # module

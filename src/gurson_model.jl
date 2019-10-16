@@ -47,6 +47,6 @@ function GursonMaterial(initial_porosity=0.05, critical_porosity=0.08, failure_p
                   Youngs_modulus, Poissons_ratio, yield_stress]
 
     return UmatMaterial(NTENS=6, NSTATV=22, NPROPS=13,
-                        params=UmatParameterState(NPROPS=13, PROPS=umat_params),
+                        parameters=UmatParameterState(NPROPS=13, PROPS=umat_params),
                         lib_path=joinpath(lib_dir,"libgurson_porous_plasticity." * dlext))
 end
