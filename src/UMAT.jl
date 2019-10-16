@@ -14,7 +14,7 @@ Variables updated by UMAT routine.
 """
 @with_kw struct UmatVariableState <: AbstractMaterialState
     NTENS :: Int64
-    NSTATV :: Int64 = 0
+    NSTATV :: Int64 = zero(Int64)
     DDSDDE :: Array{Float64,2} = zeros(Float64, NTENS, NTENS)
     STRESS :: Array{Float64,1} = zeros(Float64, NTENS)
     STATEV :: Array{Float64,1} = zeros(Float64, NSTATV)
@@ -32,7 +32,7 @@ end
 Material parameters in order that is specific to chosen UMAT.
 """
 @with_kw struct UmatParameterState <: AbstractMaterialState
-    NPROPS :: Int64 = 0
+    NPROPS :: Int64 = zero(Int64)
     PROPS :: Array{Float64,1} = zeros(Float64, NPROPS)
 end
 
@@ -82,8 +82,8 @@ UMAT material structure.
 """
 @with_kw mutable struct UmatMaterial <: AbstractMaterial
     NTENS :: Int64
-    NSTATV :: Int64 = 0
-    NPROPS :: Int64 = 0
+    NSTATV :: Int64 = zero(Int64)
+    NPROPS :: Int64 = zero(Int64)
 
     drivers :: UmatDriverState = UmatDriverState(NTENS=NTENS)
     ddrivers :: UmatDriverState = UmatDriverState(NTENS=NTENS)
