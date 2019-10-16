@@ -13,8 +13,8 @@ using LinearAlgebra
 Variables updated by UMAT routine.
 """
 @with_kw struct UmatVariableState <: AbstractMaterialState
-    NTENS :: Integer
-    NSTATV :: Integer = 0
+    NTENS :: Int64
+    NSTATV :: Int64 = 0
     DDSDDE :: Array{Float64,2} = zeros(Float64, NTENS, NTENS)
     STRESS :: Array{Float64,1} = zeros(Float64, NTENS)
     STATEV :: Array{Float64,1} = zeros(Float64, NSTATV)
@@ -32,7 +32,7 @@ end
 Material parameters in order that is specific to chosen UMAT.
 """
 @with_kw struct UmatParameterState <: AbstractMaterialState
-    NPROPS :: Integer = 0
+    NPROPS :: Int64 = 0
     PROPS :: Array{Float64,1} = zeros(Float64, NPROPS)
 end
 
@@ -41,7 +41,7 @@ Variables passed in for information.
 These drive evolution of the material state.
 """
 @with_kw struct UmatDriverState <: AbstractMaterialState
-    NTENS :: Integer
+    NTENS :: Int64
     STRAN :: Array{Float64,1} = zeros(Float64, NTENS)
     TIME :: Array{Float64,1} = zeros(Float64, 2)
     TEMP :: Float64 = zero(Float64)
@@ -81,9 +81,9 @@ UMAT material structure.
     MFront Abaqus interface produces specific name, e.g. `ELASTICITY_3D`.
 """
 @with_kw mutable struct UmatMaterial <: AbstractMaterial
-    NTENS :: Integer
-    NSTATV :: Integer = 0
-    NPROPS :: Integer = 0
+    NTENS :: Int64
+    NSTATV :: Int64 = 0
+    NPROPS :: Int64 = 0
 
     drivers :: UmatDriverState = UmatDriverState(NTENS=NTENS)
     ddrivers :: UmatDriverState = UmatDriverState(NTENS=NTENS)
