@@ -8,14 +8,6 @@ using Materials
 using Parameters
 using LinearAlgebra
 
-# These numbers are specific to the chosen umat
-# TODO: Need to find the way how to set them and modify default state variables from user code
-#       so that `reset_material!` and `update_material!` work correctly
-# NTENS = 4 #6
-# NSTATV = 0#13
-# NPROPS = 0#3 # PROPS(1) - E, PROPS(2) - NU, PROPS(3) - SYIELD
-
-# Documentation for every variable can be found in Abaqus doc about UMAT online.
 
 """
 Variables updated by UMAT routine.
@@ -163,4 +155,7 @@ end
 include("gurson_model.jl")
 
 export UmatMaterial, UmatDriverState, UmatParameterState, UmatVariableState, UmatOtherState, GursonMaterial
+
+# Re-export update_material! from Materials.jl for convenience
+export update_material!
 end # module
