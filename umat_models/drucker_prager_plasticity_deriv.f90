@@ -69,8 +69,7 @@ Subroutine DF_Derivatives(M, IFLAG,HFLAG,STRESS,DEV_STRESS,PARAM,      &
               Sigma_t,Sigma_C,BEETA,N_Power, A_Const, B_Const,ETA
 
   IF (M /= 6) Then
-    Write (*,*) ' *** Error **** in Subroutine DF_Derivatives, 6 Stress'&
-                ' components needed'
+    Write (*,*) ' *** Error **** in Subroutine DF_Derivatives, 6 Stress components needed'
     Call XIT
   Endif
 
@@ -193,8 +192,7 @@ Subroutine DFDSIGMA(M, STRESS, DEV_STRESS, PARAM, HIDDEN, &
               SM,K,SLEN,J2INVARIANT
 !
   IF (M /= 6) Then
-    Write (*,*) ' *** Error **** in Function DFDSIGMA, 6 Stress '&
-                'components needed'
+    Write (*,*) ' *** Error **** in Function DFDSIGMA, 6 Stress components needed'
     Call XIT
   Endif
 
@@ -268,8 +266,7 @@ Subroutine DEVSTRESS(M, STRESS,SM,DEV_STRESS)
 !- local variables -----------------------------------------------------
 
   IF (M /= 6) Then
-    Write (*,*) ' *** Error **** in Subroutine DEVSTRESS, 6 Stress '&
-                'components needed'
+    Write (*,*) ' *** Error **** in Subroutine DEVSTRESS, 6 Stress components needed'
     Call XIT
   Endif
 
@@ -318,8 +315,7 @@ Function YIELDF(M, STRESS, PARAM, HIDDEN, IFLAG,HFLAG) Result(YIELD)
               SIGMA_C,ALPHA,BEETA,RJ2,K,K_Zero,C_const,HARDENING_K
 !
   IF (M /= 6) Then
-    Write (*,*) ' *** Error **** in Function YIELDF, 6 Stress '&
-                'components needed'
+    Write (*,*) ' *** Error **** in Function YIELDF, 6 Stress components needed'
     Call XIT
   Endif
 
@@ -377,8 +373,7 @@ Function J2INVARIANT(M, DEV_STRESS) Result(J2Inv)
   Real(dp) :: J2Inv
 !
   IF (M /= 6) Then
-    Write (*,*) ' *** Error **** in Function J_INVARIANTS, 6 Stress '&
-                'components needed'
+    Write (*,*) ' *** Error **** in Function J_INVARIANTS, 6 Stress components needed'
     Call XIT
   Endif
 
