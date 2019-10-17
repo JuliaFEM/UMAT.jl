@@ -76,12 +76,12 @@ CELAS(1:NTENS,1:NTENS)=0.0
 DO I=1,NDI
 	DO J=1,NDI
 		CELAS(I,J)=la
-	END DO 
+	END DO
 	CELAS(I,I)=2.0*G+la
-END DO 
+END DO
 DO I=NDI+1,NTENS
 	CELAS(I,I)=G
-END DO 
+END DO
 
 ! Trial stress
 STRIAL=MATMUL(CELAS,EELAS+DSTRAN)
@@ -139,7 +139,7 @@ ELSE
 	N = 1.5*(BETA+p*onevec)/q
 	dpderatio = -1.0/3.0*(DSTRESS(1)+DSTRESS(2)+DSTRESS(3))
 	dqderatio = DOT_PRODUCT(N(1:3),DSTRESS(1:3))+2*DOT_PRODUCT(N(4:6),DSTRESS(4:6))
-	
+
 	res = 1000.0
 	! Initial guess: ratio of elasticity = 0.1
 	eratio=0.1
@@ -166,7 +166,7 @@ ELSE
 	IF (DISP>=2) THEN
 		print *, "Elasticity ratio:", eratio
 	END IF
-	
+
 	res = 1000.0
 	! 12.11.2013 Changed plastic starting-guess
 	! Close to ideal-plastic starting guess
@@ -177,7 +177,7 @@ ELSE
 	IF ((DEq==0) .and. (DEp==0)) THEN
 		DEq = tol
 	END IF
-	
+
 	! 19.11.2013 Extended starting guess to f and ep as well
 	epn = ep
 	fnn = f
@@ -188,7 +188,7 @@ ELSE
 	ELSE
 		f = f + (1-f)*DEp
 	END IF
-	
+
 	! Returns iteration variables: f, ep, DEp, DEq and residual res
 	IF (DISP>=2) THEN
 		print *, "EELAS(n):"
@@ -219,7 +219,7 @@ ELSE
 		print *, "DEp(n+1), DEq(n+1)"
 		print *, DEp, DEq
 	END IF
-		
+
 	DEin = EPLAS
 	! Update STRESS,X,DEin
 	call UpdateStress(f,ep,DEp,DEq,STRIAL,X,PROPS,NPROPS,STRESS,DEin,fnn,NTENS,NDI,DISP)
@@ -229,7 +229,7 @@ ELSE
 		print *, "X(n+1):"
 		print *, X
 	END IF
-	
+
 	! Update internal strains using return mapping algorithms
 	EELAS = EELAS+DSTRAN-DEin
 	EPLAS = EPLAS+DEin
@@ -237,10 +237,10 @@ ELSE
 		print *, "EELAS(n+1):"
 		print *, EELAS
 	END IF
-	
+
 	! Update state variables
 	call UpdateSTATEV(f,ep,DEp,DEq,EELAS,EPLAS,X,STATEV,NSTATV,NTENS,DISP)
-	
+
 	! Disabled 19.11.2013 for the Analytical consistent tangent to be enabled
 	! Calculate Numerical consistent tangent DDSDDE
 	! using Forward-difference method
@@ -281,7 +281,7 @@ end subroutine
 subroutine UpdateStress(f,ep,DEp,DEq,STRIAL,X,PROPS,&
 	NPROPS,STRESS,DEin,fnn,NTENS,NDI,DISP)
 	implicit none
-	
+
 	real(8),intent(in) :: DEp,DEq,ep,f
 	real(8),dimension(6),intent(in) :: STRIAL
 	real(8),dimension(6),intent(inout) :: STRESS,X,DEin
@@ -304,7 +304,7 @@ subroutine UpdateStress(f,ep,DEp,DEq,STRIAL,X,PROPS,&
 	K=EE/(3.0*(1.0-nu))
 	G=EE/(2.0*(1.0+nu))
 	!la=K-2.0/3.0*G
-	
+
 	!Tvergaard values for periodic void distributions
 	q1=1.5
 	q2=1.0
@@ -315,34 +315,34 @@ subroutine UpdateStress(f,ep,DEp,DEq,STRIAL,X,PROPS,&
 	!DO I=1,NDI
 	!	DO J=1,NDI
 	!		CELAS(I,J)=la
-	!	END DO 
+	!	END DO
 	!	CELAS(I,I)=2.0*G+la
-	!END DO 
+	!END DO
 	!DO I=NDI+1,NTENS
 	!	CELAS(I,I)=G
 	!END DO
-	
+
 	!Effective porosity at failure
 	fu=(q1-SQRT(q1**2-q3))/q3
-	
+
 	call Updateft(fnn,ftn,dftndf,fu,fc,ff)
 	call Updateft(f,ft,dftdf,fu,fc,ff)
-	
+
 	s=1.0-ft/fu
 	Ds=(ftn-ft)/fu
 	Deinscl=SQRT(2.0/9.0*DEp**2+DEq**2)
 	T=1.0-Ds/s+s*ga*Deinscl
-	
+
 	BETAplus = STRIAL-X/T
 	! Calculate p and q
 	call pressure(BETAplus,pplus)
 	call vonmises(BETAplus,qplus)
-	
+
 	p = pplus+(K+2.0/9.0*C/T*s)*DEp
 	q = qplus-(G+1.0/3.0*C/T*s)*3.0*DEq
-	
+
 	onevec = (/1.0,1.0,1.0,0.0,0.0,0.0/)
-	
+
 	!N=(BETAplus+pplus*onevec)/(2.0/3.0*q+(G+1.0/3.0*C/T*s)*2.0*DEq)
 	! Changed 12.11.2013 - more compact form
 	N = 1.5*(BETAplus+pplus*onevec)/(q+(3.0*G+C/T*s)*DEq)
@@ -398,13 +398,13 @@ subroutine PlasticIteration(f,ep,DEp,DEq,DDSDDE,STRIAL,X,epn,fnn,MAXITERS,TOL,&
 	real(8), dimension(3,3,3,3) :: Itensor, Ptensor,Qtensor,Ctensor,Dtensor,tensor1,tensor2
 	real(8) :: qe,dH1dDEp,dH1dDEq,dH2dDEp,dH2dDEq
 	real(8) :: resn
-	
+
 	IF (DISP>=1) THEN
 		print *, "***** Inside PlasticIteration *****"
 	END IF
 	call LoadPROPS(f0,fc,ff,fn,sn,en,qinf,b,C,ga,EE,nu,syield,PROPS,NPROPS,DISP)
 	pi=3.14159265358979
-	
+
 	!Bulk and shear moduli
 	K=EE/(3.0*(1.0-nu))
 	G=EE/(2.0*(1.0+nu))
@@ -414,13 +414,13 @@ subroutine PlasticIteration(f,ep,DEp,DEq,DDSDDE,STRIAL,X,epn,fnn,MAXITERS,TOL,&
 	DO I=1,NDI
 		DO J=1,NDI
 			CELAS(I,J)=la
-		END DO 
+		END DO
 		CELAS(I,I)=2.0*G+la
-	END DO 
+	END DO
 	DO I=NDI+1,NTENS
 		CELAS(I,I)=G
-	END DO 
-		
+	END DO
+
 	!Tvergaard values for periodic void distributions
 	q1=1.5
 	q2=1.0
@@ -428,7 +428,7 @@ subroutine PlasticIteration(f,ep,DEp,DEq,DDSDDE,STRIAL,X,epn,fnn,MAXITERS,TOL,&
 
 	!Effective porosity at failure
 	fu=(q1-SQRT(q1**2-q3))/q3
-	
+
 	call Updateft(f,ftn,dftndf,fu,fc,ff)
 	if (res<tol) THEN
 		res=1.5*tol
@@ -468,18 +468,18 @@ subroutine PlasticIteration(f,ep,DEp,DEq,DDSDDE,STRIAL,X,epn,fnn,MAXITERS,TOL,&
 		BETAplus = STRIAL-X/T
 		sflow=syield+qinf*(1.0-exp(-b*ep))
 		dsflowdep=b*qinf*exp(-b*ep)
-		
+
 		!print *, "Sflow:", sflow, "T:", T
-		
+
 		A=fn*exp(-0.5*(-en + ep)**2/sn**2)/(sqrt(2.0*pi)*sn)
 		dAdep=-(ep-en)/sn**2*A
-		
+
 		!print *, "A:", A
-		
+
 		! Calculate p and q
 		call pressure(BETAplus,pplus)
 		call vonmises(BETAplus,qplus)
-		
+
 		p = pplus+(K+2.0/9.0*C/T*s)*DEp
 		q = qplus-(G+1.0/3.0*C/T*s)*3.0*DEq
 		IF (DISP>=3) THEN
@@ -488,18 +488,18 @@ subroutine PlasticIteration(f,ep,DEp,DEq,DDSDDE,STRIAL,X,epn,fnn,MAXITERS,TOL,&
 		call msinh(1.5*q2*p/sflow,sinht)
 		call mcosh(1.5*q2*p/sflow,cosht)
 		!print *, "sinh*:", sinht, "cosh*:", cosht
-		
+
 		! Derivatives
 		dTdDEp = 2.0*ga*s*DEp/(9.0*Deinscl)
 		dTdDEq = ga*s*DEq/Deinscl
 		dTdep = 0.0
 		dTdf = dftdf*(1.0/(fu-ft)-(ftn-ft)/(fu-ft)**2-ga*Deinscl/fu) ! Different in Metzger 2009
-		
+
 		dpdDEp = K-(X(1)+X(2)+X(3))/(3.0*T**2)*dTdDEp-2.0*C*DEp*s/(9.0*T**2)*dTdDEp+2.0*C*s/(9.0*T)
 		dpdDEq = -(X(1)+X(2)+X(3))/(3.0*T**2)*dTdDEq-2.0*C*DEp*s/(9.0*T**2)*dTdDEq
 		dpdep = -(X(1)+X(2)+X(3))/(3.0*T**2)*dTdep-2.0*C*DEp*s/(9.0*T**2)*dTdep
 		dpdf = -(X(1)+X(2)+X(3))/(3.0*T**2)*dTdf-2.0*C*DEp*s/(9.0*T**2)*dTdf-2.0*C*DEp/(9.0*T*fu)*dftdf
-		
+
 		!mult1 = STRIAL(1)**2+STRIAL(2)**2+STRIAL(3)**2+2.0*(STRIAL(4)**2+STRIAL(5)**2+STRIAL(6)**2)
 		!mult2 = 2.0*(STRIAL(1)*X(1)+STRIAL(2)*X(2)+STRIAL(3)*X(3)+2.0*(STRIAL(4)*X(4)+STRIAL(5)*X(5)+STRIAL(6)*X(6)))
 		!mult3 = X(1)**2+X(2)**2+X(3)**2+2.0*(X(4)**2+X(5)**2+X(6)**2)
@@ -514,7 +514,7 @@ subroutine PlasticIteration(f,ep,DEp,DEq,DDSDDE,STRIAL,X,epn,fnn,MAXITERS,TOL,&
 			+ 0.5*(STRIAL(1) - STRIAL(2) - X(1)/T + X(2)/T)**2&
 			+ 0.5*(STRIAL(1) - STRIAL(3) - X(1)/T + X(3)/T)**2&
 			+ 0.5*(STRIAL(2) - STRIAL(3) - X(2)/T + X(3)/T)**2)
-		
+
 		dqdDEp = mult4*dTdDEp&
 			+C*s*DEq/T**2*dTdDEp
 		dqdDEq = mult4*dTdDEq&
@@ -523,7 +523,7 @@ subroutine PlasticIteration(f,ep,DEp,DEq,DDSDDE,STRIAL,X,epn,fnn,MAXITERS,TOL,&
 			+C*s*DEq/T**2*dTdep
 		dqdf = mult4*dTdf&
 			+C*DEq*(s/T**2*dTdf+dftdf/(T*fu))
-		
+
 		! Equation 1
 		dphidq=2.0*q/sflow**2
 		dphidq2=2.0/sflow**2
@@ -534,13 +534,13 @@ subroutine PlasticIteration(f,ep,DEp,DEq,DDSDDE,STRIAL,X,epn,fnn,MAXITERS,TOL,&
 		dphidpdsflow = -4.5*ft*p*q1*q2**2*cosht/sflow**3&
 			-3.0*ft*q1*q2*sinht/sflow**2
 		F1 = DEp*dphidq+DEq*dphidp
-		
+
 		dF1dDEp = dphidq+DEp*dphidq2*dqdDEp+DEq*dphidp2*dpdDEp
 		dF1dDEq = DEp*dphidq2*dqdDEq+dphidp+DEq*dphidp2*dpdDEq
 		dF1dep = DEp*(dphidq2*dqdep+dphidqdsflow*dsflowdep)&
 			+ DEq*(dphidp2*dpdep+dphidpdsflow*dsflowdep)
 		dF1df = DEp*(dphidq2*dqdf) + DEq*(dphidp2*dpdf+dphidpdf)
-		
+
 		! Equation 2
 		F2 = (q/sflow)**2+2.0*ft*q1*cosht-(1.0+q3*ft**2)
 		dphidsflow = -3.0*ft*p*q1*q2*sinht/sflow**2 - 2.0*q**2/sflow**3
@@ -548,7 +548,7 @@ subroutine PlasticIteration(f,ep,DEp,DEq,DDSDDE,STRIAL,X,epn,fnn,MAXITERS,TOL,&
 		dF2dDEq = dphidq*dqdDEq + dphidp*dpdDEq
 		dF2dep = dphidq*dqdep + dphidp*dpdep + dphidsflow*dsflowdep
 		dF2df = dphidq*dqdf + 2.0*dftdf*q1*cosht + dphidp*dpdf-2.0*q3*dftdf*ft
-		
+
 		! Equation 3
 		Depscl = (-p*DEp+q*DEq)/((1.0-f)*sflow)
 		G1 = (ep-epn)-Depscl
@@ -556,7 +556,7 @@ subroutine PlasticIteration(f,ep,DEp,DEq,DDSDDE,STRIAL,X,epn,fnn,MAXITERS,TOL,&
 		dG1dDEq = -(-dpdDEq*DEp+dqdDEq*DEq+q)/((1.0-f)*sflow)
 		dG1dep = 1.0 - (-dpdep*DEp+dqdep*DEq)/((1.0-f)*sflow) + (-p*DEp+q*DEq)/((1.0-f)*sflow**2)*dsflowdep
 		dG1df = -(-dpdf*DEp+dqdf*DEq)/((1.0-f)*sflow) - (-p*DEp+q*DEq)/((1.0-f)**2*sflow)
-		
+
 		! Equation 4
 		IF (p<0) THEN
 			! Nucleation term is only active under hydrostatic tension p<0
@@ -582,7 +582,7 @@ subroutine PlasticIteration(f,ep,DEp,DEq,DDSDDE,STRIAL,X,epn,fnn,MAXITERS,TOL,&
 			dG2dep = 0.0
 			dG2df = 1.0+DEp
 		END IF
-		
+
 		!Linearized system for Newton's iterations
 		ALIN(1,1)=dF1dDEp
 		ALIN(2,1)=dF1dDEq
@@ -600,9 +600,9 @@ subroutine PlasticIteration(f,ep,DEp,DEq,DDSDDE,STRIAL,X,epn,fnn,MAXITERS,TOL,&
 		ALIN(2,4)=dG2dDEq
 		ALIN(3,4)=dG2dep
 		ALIN(4,4)=dG2df
-		
+
 		BLIN=-1.0*(/F1,F2,G1,G2/)
-		
+
 		!Convergence check
 		res=0.0
 		do J=1,4
@@ -613,8 +613,8 @@ subroutine PlasticIteration(f,ep,DEp,DEq,DDSDDE,STRIAL,X,epn,fnn,MAXITERS,TOL,&
 		IF (DISP>=3) THEN
 			print *, "Residual:", res
 		END IF
-		
-		
+
+
 		! Solve linear system
 		IF (DISP>=3) THEN
 			print *, "ALIN"
@@ -623,12 +623,12 @@ subroutine PlasticIteration(f,ep,DEp,DEq,DDSDDE,STRIAL,X,epn,fnn,MAXITERS,TOL,&
 			print *, BLIN
 		END IF
 		call LinearSolve(TRANSPOSE(ALIN),4,BLIN,dXLIN)
-		
+
 		IF (DISP>=3) THEN
 			print *, "dXLIN"
 			print *, dXLIN
 		END IF
-		
+
 		!Update variables
 		DEp=DEp+dXLIN(1)
 		DEq=DEq+dXLIN(2)
@@ -642,16 +642,16 @@ subroutine PlasticIteration(f,ep,DEp,DEq,DDSDDE,STRIAL,X,epn,fnn,MAXITERS,TOL,&
 	! Calculate p and q
 	call pressure(BETAplus,pplus)
 	call vonmises(BETAplus,qplus)
-	
+
 	p = pplus+(K+2.0/9.0*C/T*s)*DEp
 	q = qplus-(G+1.0/3.0*C/T*s)*3.0*DEq
 	qe = q + 3.0*G*DEq
-	
+
 	onevec = (/1.0,1.0,1.0,0.0,0.0,0.0/)
 	tempmat6(1:6,1:6) = 0.0
 	tempmat7(1:6,1:6) = 0.0
 	N = 1.5*(BETAplus+pplus*onevec)/qplus
-	
+
 	! Determine derivatives d/dstr
 	dpdstr = -1.0/3.0*onevec
 	dqdstr = N
@@ -678,7 +678,7 @@ subroutine PlasticIteration(f,ep,DEp,DEq,DDSDDE,STRIAL,X,epn,fnn,MAXITERS,TOL,&
 	! Variations of internal variables are expressed using varDEp, varDEq and varstr:
 	! varep = dH1dDEp*varDEp + dH1dDEq*varDEq + DOT_PRODUCT(dH1dstr,varstr)
 	! varf = dH2dDEp*varDEp + dH2dDEq*varDEq + DOT_PRODUCT(dH2dstr,varstr)
-	
+
 	! Total differentiation of equations 1 and 2 with respect to DEp, DEq, ep, f, STRIAL
 	! Expressing varep and varf using the above relations => varDEp, varDEq, varstr
 	Amat2 = ALIN(1:2,1:2)
@@ -698,9 +698,9 @@ subroutine PlasticIteration(f,ep,DEp,DEq,DDSDDE,STRIAL,X,epn,fnn,MAXITERS,TOL,&
 	Bq = Cmat2(1,2)*B1 + Cmat2(2,2)*B2
 	Bep = dH1dDEp*Bp + dH1dDEq*Bq + dH1dstr
 	Bf = dH2dDEp*Bp + dH2dDEq*Bq + dH2dstr
-	
+
 	dNdT = -1.5*X/(qplus*T**2)-N/qplus*mult4
-	
+
 	!call OUTER_PRODUCT(N,N,tempmat6,6)
 	!PP(1:6,1:6) = 0.0
 	!PP(1:3,1) = (/2.0/3.0, -1.0/3.0, -1.0/3.0/)
@@ -732,9 +732,9 @@ subroutine PlasticIteration(f,ep,DEp,DEq,DDSDDE,STRIAL,X,epn,fnn,MAXITERS,TOL,&
 	!! Combine to Q matrix
 	!QQ = QQ + tempmat6*DEq
 	!DDSDDE = CELAS - MATMUL(TRANSPOSE(CELAS),MATMUL(QQ,CELAS))
-	
+
 	! 20.11.2013 Added tensor calculus here
-	
+
 	! Fourth order identity tensor "Itensor"
 	call IdentityTensor(Itensor)
 	! Projection tensor "Ptensor"
@@ -742,7 +742,7 @@ subroutine PlasticIteration(f,ep,DEp,DEq,DDSDDE,STRIAL,X,epn,fnn,MAXITERS,TOL,&
 	Ptensor = Itensor-1.0/3.0*tensor1
 	! Elasticity tensor "Ctensor"
 	CTensor = K*tensor1+2.0*G*Ptensor
-	
+
 	! Calculate variation of N
 	! dN/dstr
 	call TensorDyad(N,N,tensor1)
@@ -750,21 +750,21 @@ subroutine PlasticIteration(f,ep,DEp,DEq,DDSDDE,STRIAL,X,epn,fnn,MAXITERS,TOL,&
 	call TensorDyad(dNdT,dTdDEp*Bp+dTdDEq*Bq+dTdep*Bep+dTdf*Bf,tensor1)
 	! variation of var(N)/var(str)
 	tensor2 = tensor2 + tensor1
-	
+
 	! Build Q tensor
 	Qtensor = tensor2*DEq
 	call TensorDyad(N,Bq,tensor1)
 	Qtensor = Qtensor + tensor1
 	call TensorDyad(onevec,Bp,tensor1)
 	Qtensor = Qtensor + 1.0/3.0*tensor1
-	
+
 	! Calculate C_ijst Q_stpq C_pqkl
 	call TensorQuad(Ctensor,Qtensor,Ctensor,tensor1)
 	DTensor = CTensor - tensor1
-	
+
 	! Return 4th order tensor to 6x6 matrix
 	call reduce4tensor(DTensor, DDSDDE)
-	
+
 	IF (DISP>=1) THEN
 		print *, '***** Finished PlasticIteration *****'
 	END IF
@@ -893,16 +893,16 @@ CONTAINS
 	END FUNCTION Delta
 end subroutine
 subroutine TensorDyad(a,b,AAt)
-	implicit none 
+	implicit none
 	real(8), dimension(6), intent(in) :: a,b
 	real(8), dimension(3,3,3,3), intent(inout) :: AAt
 	real(8), dimension(3,3) :: at,bt
 	integer :: i,j,k,l
-	
+
 	! Convert vectors to tensor
 	call vector2tensor(a,at)
 	call vector2tensor(b,bt)
-	
+
 	! Calculate A_ijkl = a_ij b_kl
 	DO i=1,3
 		DO j=1,3
@@ -932,7 +932,7 @@ subroutine TensorProd(A,B,RES)
 				END DO
 			END DO
 		END DO
-	END DO	
+	END DO
 end subroutine
 subroutine TensorQuad(A,B,C,RES)
 	implicit none
@@ -1081,7 +1081,7 @@ subroutine NumericalConsistentTangent(STRESS,STATEV,DSTRAN,DDSDDE,NDI,NSHR,NTENS
 	pi=3.14159265358979
 	tol = 1e-9
 	MAXITERS = 20
-	
+
 	IF (DISP>=1) THEN
 		print *, '***** Inside NumericalConsistentTangent *****'
 	END IF
@@ -1092,10 +1092,10 @@ subroutine NumericalConsistentTangent(STRESS,STATEV,DSTRAN,DDSDDE,NDI,NSHR,NTENS
 	IdentityMatrix(1:3,1) = (/1.0, 0.0, 0.0/)
 	IdentityMatrix(1:3,2) = (/0.0, 1.0, 0.0/)
 	IdentityMatrix(1:3,3) = (/0.0, 0.0, 1.0/)
-	
+
 	!Load properties
 	call LoadPROPS(f0,fc,ff,fn,sn,en,qinf,b,C,ga,EE,nu,syield,PROPS,NPROPS,DISP)
-	
+
 	!Bulk and shear moduli
 	K=EE/(3.0*(1.0-nu))
 	G=EE/(2.0*(1.0+nu))
@@ -1112,24 +1112,24 @@ subroutine NumericalConsistentTangent(STRESS,STATEV,DSTRAN,DDSDDE,NDI,NSHR,NTENS
 	! Load state variables
 	call LoadSTATEV(f,ep,DEp,DEq,EELAS,EPLAS,X,STATEV,NSTATV,&
 		NTENS,NDI,NSHR,IdentityMatrix,DISP)
-	
+
 	fnn = f
 	!Effective linear elasticity tensor CELAS
 	CELAS(1:NTENS,1:NTENS)=0.0
 	DO I=1,NDI
 		DO J=1,NDI
 			CELAS(I,J)=la
-		END DO 
+		END DO
 		CELAS(I,I)=2.0*G+la
-	END DO 
+	END DO
 	DO I=NDI+1,NTENS
 		CELAS(I,I)=G
 	END DO
-	
+
 	!DEp = DEp/10.0
 	!DEq = DEq/10.0
 
-	
+
 	DO I=1,NTENS
 		IF (ABS(EELAS(I)+EPLAS(I))>typx) THEN
 			eps=eta*ABS(EELAS(I)+EPLAS(I))*SIGN(1.0,DSTRAN(I))
@@ -1158,7 +1158,7 @@ subroutine NumericalConsistentTangent(STRESS,STATEV,DSTRAN,DDSDDE,NDI,NSHR,NTENS
 		END IF
 		! Relative stress
 		BETA=STRIAL-X
-		
+
 		call pressure(BETA,p)
 		call vonmises(BETA,q)
 		IF (DISP>=3) THEN
@@ -1195,7 +1195,7 @@ subroutine NumericalConsistentTangent(STRESS,STATEV,DSTRAN,DDSDDE,NDI,NSHR,NTENS
 			N = 1.5*(BETA+p*onevec)/q
 			DEq = 2.0/3.0*DOT_PRODUCT(N,DSTRAIN-DEp/3.0*onevec)
 			! Returns iteration variables: f, ep, DEp, DEq and residual res
-			call PlasticIteration(f,ep,DEp,DEq,DDSDDE,STRIAL,X,MAXITERS,TOL,&
+			call PlasticIteration(f,ep,DEp,DEq,DDSDDE,STRIAL,X,0.0,fnn,MAXITERS,TOL,&
 				PROPS,NPROPS,NTENS,NDI,res,DISP-1)
 			! Check for convergence
 			IF (res>tol) THEN
