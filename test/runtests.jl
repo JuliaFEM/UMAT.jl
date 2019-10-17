@@ -19,4 +19,7 @@ using Suppressor
     @testset "DruckerPragerMaterial" begin
         include("test_druckerpragermaterial.jl")
     end
+    @testset "GursonMaterial" begin
+        include("test_gurson.jl")
+    end
 end
