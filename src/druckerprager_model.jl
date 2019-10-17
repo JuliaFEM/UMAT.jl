@@ -59,19 +59,26 @@ function DruckerPragerMaterial(Sigma_t = 200.,
                                IPNUM = 1,      # remember to convert float
                                MTYP = 2,       # remember to convert float
                                HARDTYP = 1,    # remember to convert float
-                               DTIME = .00011,
                                DPC="DPC_LH1")
 
 
-    umat_other = UmatOtherState(NTENS=6, NSTATV=1, NPROPS=18,
-                                CMNAME=DPC, NDI=sizeof(DPC))
+    umat_other = UmatOtherState(NTENS=6, NSTATV=1, NPROPS=18, CMNAME=DPC)
     umat_params = [Sigma_t, Sigma_c, K_Zero, C_const, N_Power, Eta, A_Const,
                    B_Const, E, NU, DT, float(PRNTYP), FTOLER, float(MAXITER),
-                   float(ELNUM), float(IPNUM), float(MTYP), float(HARDTYP),
-                   DTIME]
+                   float(ELNUM), float(IPNUM), float(MTYP), float(HARDTYP)]
 
-
-    return UmatMaterial(NTENS=6, NSTATV=1, NPROPS=18, umat_other=umat_other,
-                        parameters=UmatParameterState(NPROPS=18, PROPS=umat_params),
+    NTENS=6
+    NSTATV=1
+    NPROPS=18
+    return UmatMaterial(NTENS=NTENS,
+                        NSTATV=NSTATV,
+                        NPROPS=NPROPS,
+                        #drivers=UmatDriverState(NTENS=NTENS),
+                        #ddrivers=UmatDriverState(NTENS=NTENS),
+                        parameters=UmatParameterState(NPROPS=NPROPS, PROPS=umat_params),
+                        #variables=UmatVariableState(NTENS=NTENS, NSTATV=NSTATV),
+                        #variables_new=UmatVariableState(NTENS=NTENS, NSTATV=NSTATV),
+                        #dparameters=UmatParameterState(NPROPS=NPROPS),
+                        umat_other=umat_other,
                         lib_path=joinpath(lib_dir,"libdrucker_prager_plasticity." * dlext))
 end

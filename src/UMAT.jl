@@ -120,11 +120,13 @@ function call_umat!(func_umat::Symbol, lib_path::String, STRESS,STATEV,DDSDDE,SS
 
     ccall(sym_umat, Nothing,
         (Ref{Float64},Ref{Float64},Ref{Float64},Ref{Float64},Ref{Float64},Ref{Float64},Ref{Float64},Ref{Float64},Ref{Float64},Ref{Float64},
-        Ref{Float64},Ref{Float64},Ref{Float64},Ref{Float64},Ref{Float64},Ref{Float64},Ref{Float64},Ref{Float64},Ptr{Cuchar},Ref{Int},Ref{Int},
+        Ref{Float64},Ref{Float64},Ref{Float64},Ref{Float64},Ref{Float64},Ref{Float64},Ref{Float64},Ref{Float64},Ptr{Cuchar},#Csize_t,
+        Ref{Int},Ref{Int},
         Ref{Int},Ref{Int},Ref{Float64},Ref{Int},Ref{Float64},Ref{Float64},Ref{Float64},Ref{Float64},Ref{Float64},Ref{Float64},
         Ref{Int},Ref{Int},Ref{Int},Ref{Int},Ref{Int},Ref{Int}),
         STRESS,STATEV,DDSDDE,SSE,SPD,SCD,RPL,DDSDDT,DRPLDE,DRPLDT,
-        STRAN,DSTRAN,TIME,DTIME,TEMP,DTEMP,PREDEF,DPRED,CMNAME,NDI,NSHR,
+        STRAN,DSTRAN,TIME,DTIME,TEMP,DTEMP,PREDEF,DPRED,CMNAME,#sizeof(CMNAME),
+        NDI,NSHR,
         NTENS,NSTATV,PROPS,NPROPS,COORDS,DROT,PNEWDT,CELENT,DFGRD0,DFGRD1,
         NOEL,NPT,LAYER,KSPT,KSTEP,KINC)
 
