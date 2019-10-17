@@ -2,14 +2,6 @@
 # License is MIT: see https://github.com/JuliaFEM/UMAT.jl/blob/master/LICENSE
 
 
-pkg_dir = dirname(Base.find_package("UMAT"))
-if Sys.iswindows()
-    lib_dir = joinpath(pkg_dir,"..","deps","usr","bin")
-else
-    lib_dir = joinpath(pkg_dir,"..","deps","usr","lib")
-end
-
-
 """
 !STATEV(1)=f:Porosity
 !STATEV(2)=ep:equivalent plastic strain

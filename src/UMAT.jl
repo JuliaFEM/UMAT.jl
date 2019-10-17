@@ -8,6 +8,13 @@ using Materials
 using Parameters
 using LinearAlgebra
 
+pkg_dir = dirname(Base.find_package("UMAT"))
+if Sys.iswindows()
+    lib_dir = joinpath(pkg_dir,"..","deps","usr","bin")
+else
+    lib_dir = joinpath(pkg_dir,"..","deps","usr","lib")
+end
+
 
 """
 Variables updated by UMAT routine.
@@ -52,7 +59,7 @@ end
 Other Abaqus UMAT variables passed in for information.
 """
 @with_kw struct UmatOtherState <: AbstractMaterialState
-    CMNAME :: Cuchar = 'U'
+    CMNAME :: String = "U" # Ptr{Cuchar} # = 'U'
     NDI :: Int = 3
     NSHR :: Int = 3
     NTENS :: Int  # NDI + NSHR
@@ -113,7 +120,7 @@ function call_umat!(func_umat::Symbol, lib_path::String, STRESS,STATEV,DDSDDE,SS
 
     ccall(sym_umat, Nothing,
         (Ref{Float64},Ref{Float64},Ref{Float64},Ref{Float64},Ref{Float64},Ref{Float64},Ref{Float64},Ref{Float64},Ref{Float64},Ref{Float64},
-        Ref{Float64},Ref{Float64},Ref{Float64},Ref{Float64},Ref{Float64},Ref{Float64},Ref{Float64},Ref{Float64},Ref{Cuchar},Ref{Int},Ref{Int},
+        Ref{Float64},Ref{Float64},Ref{Float64},Ref{Float64},Ref{Float64},Ref{Float64},Ref{Float64},Ref{Float64},Ptr{Cuchar},Ref{Int},Ref{Int},
         Ref{Int},Ref{Int},Ref{Float64},Ref{Int},Ref{Float64},Ref{Float64},Ref{Float64},Ref{Float64},Ref{Float64},Ref{Float64},
         Ref{Int},Ref{Int},Ref{Int},Ref{Int},Ref{Int},Ref{Int}),
         STRESS,STATEV,DDSDDE,SSE,SPD,SCD,RPL,DDSDDT,DRPLDE,DRPLDT,
@@ -153,8 +160,10 @@ function Materials.reset_material!(material::UmatMaterial)
 end
 
 include("gurson_model.jl")
+include("druckerprager_model.jl")
 
-export UmatMaterial, UmatDriverState, UmatParameterState, UmatVariableState, UmatOtherState, GursonMaterial
+export UmatMaterial, UmatDriverState, UmatParameterState, UmatVariableState
+export UmatOtherState, GursonMaterial, DruckerPragerMaterial
 
 # Re-export update_material! from Materials.jl for convenience
 export update_material!
