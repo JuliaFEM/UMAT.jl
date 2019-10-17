@@ -6,7 +6,7 @@ using UMAT, Test, Materials, DelimitedFiles
 material = GursonMaterial()
 
 # Define strain history
-e11 = 0.02.*vcat(Array(range(0, stop=1.5e-2, length=30)), Array(range(1.5e-2, stop=-1.5e-2, length=30)), Array(range(-1.5e-2, stop=3e-2, length=40)))
+e11 = 0.5.*vcat(Array(range(0, stop=1.5e-2, length=30)), Array(range(1.5e-2, stop=-1.5e-2, length=30)), Array(range(-1.5e-2, stop=3e-2, length=40)))
 e22 = -e11/2
 e33 = e22
 strains = [[e11[i], e22[i], e33[i], 0.0, 0.0, 0.0] for i in 1:100]
@@ -30,6 +30,6 @@ end
 for sig in ["s11", "s22", "s33"]
     ref_stress = readdlm("test_gurson/ref_stresses_" * sig *".txt")
     for (comp,ref) in zip(eval(Symbol(sig)), ref_stress)
-        @test isapprox(comp,ref)
+        @test isapprox(comp,ref,atol=sqrt(eps()))
     end
 end

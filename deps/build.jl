@@ -2,7 +2,7 @@
 # License is MIT: see https://github.com/JuliaFEM/UMAT.jl/blob/master/LICENSE
 
 dependencies = [
-    "https://github.com/TeroFrondelius/umat_binaries_builder/releases/download/v0.4.0/build_umat_binaries.v0.2.0.jl"
+    "https://github.com/TeroFrondelius/umat_binaries_builder/releases/download/v0.5.0/build_umat_binaries.v0.5.0.jl"
 ]
 
 for build_script in dependencies
