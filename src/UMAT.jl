@@ -7,6 +7,7 @@ using Libdl
 using Materials
 using Parameters
 using LinearAlgebra
+using Tensors
 
 pkg_dir = dirname(Base.find_package("UMAT"))
 if Sys.iswindows()
@@ -19,7 +20,7 @@ end
 """
 Variables updated by UMAT routine.
 """
-@with_kw struct UmatVariableState <: AbstractMaterialState
+@with_kw mutable struct UmatVariableState <: AbstractMaterialState
     NTENS :: Int
     NSTATV :: Int = zero(Int)
     DDSDDE :: Array{Float64,2} = zeros(Float64, NTENS, NTENS)
@@ -33,12 +34,16 @@ Variables updated by UMAT routine.
     DRPLDE :: Array{Float64,1} = zeros(Float64, NTENS)
     DRPLDT :: Array{Float64,1} = zeros(Float64, 1)
     PNEWDT :: Array{Float64,1} = ones(Float64, 1)
+    # TODO Check that shear stress components are in correct order
+    # https://github.com/KristofferC/Tensors.jl/blob/e3a67612f38124c15d77ea0a2a21d0175d0a32d8/src/voigt.jl#L1
+    stress = fromvoigt(SymmetricTensor{2,convert(Int,NTENS/2)}, STRESS)
+    jacobian = fromvoigt(SymmetricTensor{4,convert(Int,NTENS/2)}, DDSDDE)
 end
 
 """
 Material parameters in order that is specific to chosen UMAT.
 """
-@with_kw struct UmatParameterState <: AbstractMaterialState
+@with_kw mutable struct UmatParameterState <: AbstractMaterialState
     NPROPS :: Int = zero(Int)
     PROPS :: Array{Float64,1} = zeros(Float64, NPROPS)
 end
@@ -47,18 +52,22 @@ end
 Variables passed in for information.
 These drive evolution of the material state.
 """
-@with_kw struct UmatDriverState <: AbstractMaterialState
+@with_kw mutable struct UmatDriverState <: AbstractMaterialState
     NTENS :: Int
     STRAN :: Array{Float64,1} = zeros(Float64, NTENS)
     TIME :: Array{Float64,1} = zeros(Float64, 2)
     TEMP :: Float64 = zero(Float64)
     PREDEF :: Float64 = zero(Float64)
+    # TODO Check that shear strain components are in correct order
+    # https://github.com/KristofferC/Tensors.jl/blob/e3a67612f38124c15d77ea0a2a21d0175d0a32d8/src/voigt.jl#L1
+    strain = fromvoigt(SymmetricTensor{2,convert(Int,NTENS/2)}, STRAN; offdiagscale = 2.0)
+    time = TIME[2]
 end
 
 """
 Other Abaqus UMAT variables passed in for information.
 """
-@with_kw struct UmatOtherState <: AbstractMaterialState
+@with_kw mutable struct UmatOtherState <: AbstractMaterialState
     CMNAME :: String = "U" # Ptr{Cuchar} # = 'U'
     NDI :: Int = 3
     NSHR :: Int = 3
@@ -138,7 +147,7 @@ end
 """
 Calls UMAT and updates MaterialVariableState writing the result to material.variables_new
 """
-function integrate_material!(material::UmatMaterial)
+function Materials.integrate_material!(material::UmatMaterial)
     @unpack CMNAME,NDI,NSHR,NTENS,NSTATV,NPROPS,COORDS,DROT,CELENT,DFGRD0,DFGRD1,NOEL,NPT,LAYER,KSPT,KSTEP,KINC = material.umat_other
     @unpack PROPS = material.parameters
     STRAN, TIME, TEMP, PREDEF = material.drivers.STRAN, material.drivers.TIME, material.drivers.TEMP, material.drivers.PREDEF
@@ -165,8 +174,8 @@ include("gurson_model.jl")
 include("druckerprager_model.jl")
 
 export UmatMaterial, UmatDriverState, UmatParameterState, UmatVariableState
-export UmatOtherState, GursonMaterial, DruckerPragerMaterial
+export UmatOtherState, GursonMaterial, DruckerPragerMaterial, integrate_material!
 
-# Re-export update_material! from Materials.jl for convenience
-export update_material!
+# Re-export update_material! and uniaxial_increment! from Materials.jl for convenience
+export update_material!, uniaxial_increment!
 end # module
