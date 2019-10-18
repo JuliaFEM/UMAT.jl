@@ -20,11 +20,11 @@ end
 """
 Variables updated by UMAT routine.
 """
-@with_kw mutable struct UmatVariableState <: AbstractMaterialState
+@with_kw struct UmatVariableState <: AbstractMaterialState
     NTENS :: Int
     NSTATV :: Int = zero(Int)
     DDSDDE :: Array{Float64,2} = zeros(Float64, NTENS, NTENS)
-    STRESS :: Array{Float64,1} = zeros(Float64, NTENS)
+    STRESS_ :: Array{Float64,1} = zeros(Float64, NTENS)
     STATEV :: Array{Float64,1} = zeros(Float64, NSTATV)
     SSE :: Array{Float64,1} = zeros(Float64, 1)
     SPD :: Array{Float64,1} = zeros(Float64, 1)
@@ -36,14 +36,14 @@ Variables updated by UMAT routine.
     PNEWDT :: Array{Float64,1} = ones(Float64, 1)
     # TODO Check that shear stress components are in correct order
     # https://github.com/KristofferC/Tensors.jl/blob/e3a67612f38124c15d77ea0a2a21d0175d0a32d8/src/voigt.jl#L1
-    stress = fromvoigt(SymmetricTensor{2,convert(Int,NTENS/2)}, STRESS)
+    stress = fromvoigt(SymmetricTensor{2,convert(Int,NTENS/2)}, STRESS_)
     jacobian = fromvoigt(SymmetricTensor{4,convert(Int,NTENS/2)}, DDSDDE)
 end
 
 """
 Material parameters in order that is specific to chosen UMAT.
 """
-@with_kw mutable struct UmatParameterState <: AbstractMaterialState
+@with_kw struct UmatParameterState <: AbstractMaterialState
     NPROPS :: Int = zero(Int)
     PROPS :: Array{Float64,1} = zeros(Float64, NPROPS)
 end
@@ -119,7 +119,7 @@ end
 """
 Wrapper function to ccall the UMAT subroutine from the compiled shared library.
 """
-function call_umat!(func_umat::Symbol, lib_path::String, STRESS,STATEV,DDSDDE,SSE,SPD,SCD,RPL,DDSDDT,DRPLDE,DRPLDT,
+function call_umat!(func_umat::Symbol, lib_path::String, STRESS_,STATEV,DDSDDE,SSE,SPD,SCD,RPL,DDSDDT,DRPLDE,DRPLDT,
         STRAN,DSTRAN,TIME,DTIME,TEMP,DTEMP,PREDEF,DPRED,CMNAME,NDI,NSHR,
         NTENS,NSTATV,PROPS,NPROPS,COORDS,DROT,PNEWDT,CELENT,DFGRD0,DFGRD1,
         NOEL,NPT,LAYER,KSPT,KSTEP,KINC)
@@ -133,7 +133,7 @@ function call_umat!(func_umat::Symbol, lib_path::String, STRESS,STATEV,DDSDDE,SS
         Ref{Int},Ref{Int},
         Ref{Int},Ref{Int},Ref{Float64},Ref{Int},Ref{Float64},Ref{Float64},Ref{Float64},Ref{Float64},Ref{Float64},Ref{Float64},
         Ref{Int},Ref{Int},Ref{Int},Ref{Int},Ref{Int},Ref{Int}),
-        STRESS,STATEV,DDSDDE,SSE,SPD,SCD,RPL,DDSDDT,DRPLDE,DRPLDT,
+        STRESS_,STATEV,DDSDDE,SSE,SPD,SCD,RPL,DDSDDT,DRPLDE,DRPLDT,
         STRAN,DSTRAN,TIME,DTIME,TEMP,DTEMP,PREDEF,DPRED,CMNAME,#sizeof(CMNAME),
         NDI,NSHR,
         NTENS,NSTATV,PROPS,NPROPS,COORDS,DROT,PNEWDT,CELENT,DFGRD0,DFGRD1,
@@ -152,14 +152,14 @@ function Materials.integrate_material!(material::UmatMaterial)
     @unpack PROPS = material.parameters
     STRAN, TIME, TEMP, PREDEF = material.drivers.STRAN, material.drivers.TIME, material.drivers.TEMP, material.drivers.PREDEF
     DSTRAN, DTIME, DTEMP, DPRED = material.ddrivers.STRAN, material.drivers.TIME[1], material.ddrivers.TEMP, material.ddrivers.PREDEF
-    @unpack STRESS,STATEV,DDSDDE,SSE,SPD,SCD,RPL,DDSDDT,DRPLDE,DRPLDT,PNEWDT = material.variables
+    @unpack STRESS_,STATEV,DDSDDE,SSE,SPD,SCD,RPL,DDSDDT,DRPLDE,DRPLDT,PNEWDT = material.variables
 
-    call_umat!(material.behaviour, material.lib_path, STRESS, STATEV, DDSDDE, SSE, SPD, SCD, RPL, DDSDDT, DRPLDE, DRPLDT,
+    call_umat!(material.behaviour, material.lib_path, STRESS_, STATEV, DDSDDE, SSE, SPD, SCD, RPL, DDSDDT, DRPLDE, DRPLDT,
         STRAN, DSTRAN, TIME, DTIME, TEMP, DTEMP, PREDEF, DPRED, CMNAME, NDI, NSHR,
         NTENS, NSTATV, PROPS, NPROPS, COORDS, DROT, PNEWDT, CELENT, DFGRD0, DFGRD1,
         NOEL, NPT, LAYER, KSPT, KSTEP, KINC)
 
-    variables_new = UmatVariableState(NSTATV=NSTATV,NTENS=NTENS,STRESS=STRESS,STATEV=STATEV,DDSDDE=DDSDDE,SSE=SSE,SPD=SPD,SCD=SCD,RPL=RPL,DDSDDT=DDSDDT,DRPLDE=DRPLDE,DRPLDT=DRPLDT,PNEWDT=PNEWDT)
+    variables_new = UmatVariableState(NSTATV=NSTATV,NTENS=NTENS,STRESS_=STRESS_,STATEV=STATEV,DDSDDE=DDSDDE,SSE=SSE,SPD=SPD,SCD=SCD,RPL=RPL,DDSDDT=DDSDDT,DRPLDE=DRPLDE,DRPLDT=DRPLDT,PNEWDT=PNEWDT)
     material.variables_new = variables_new
 end
 

@@ -20,5 +20,5 @@ UMAT.integrate_material!(material)
 update_material!(material)
 
 for i in 1:4
-    @test isapprox(material.variables.STRESS[i],ref_stress[i],atol=sqrt(eps()))
+    @test isapprox(material.variables.STRESS_[i],ref_stress[i],atol=sqrt(eps()))
 end
