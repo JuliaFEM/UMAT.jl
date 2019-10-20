@@ -14,12 +14,12 @@ using Suppressor
         include("test_elastic.jl")
     end
     @testset "UmatMaterial" begin
-        include("test_umatmaterial.jl")
+        # include("test_umatmaterial.jl")
     end
     @testset "DruckerPragerMaterial" begin
         include("test_druckerpragermaterial.jl")
     end
     @testset "GursonMaterial" begin
-        include("test_gurson.jl")
+        # include("test_gurson.jl")
     end
 end
