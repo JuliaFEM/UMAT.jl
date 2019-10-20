@@ -20,6 +20,6 @@ using Suppressor
         include("test_druckerpragermaterial.jl")
     end
     @testset "GursonMaterial" begin
-        #include("test_gurson.jl")
+        include("test_gurson.jl")
     end
 end

@@ -29,25 +29,26 @@ dstrain11 = 1e-3*dtime
 dtimes = [dtime, dtime, dtime, dtime, 1.0]
 dstrains11 = [dstrain11, dstrain11, dstrain11, -dstrain11, -4*dstrain11]
 
-ss = []
-st = []
-tt = []
+expected_S11 = [50. 100. 150. 100. -100.]
+expected_stress = zeros(6)
+
+expected_strains = [[0.00025, -7.5e-5, -7.5e-5, 0.0, 0.0, 0.0],
+                    [0.0005, -0.00015, -0.00015, 0.0, 0.0, 0.0],
+                    [0.00075, -0.000225, -0.000225, 0.0, 0.0, 0.0],
+                    [0.0005, -0.00015, -0.00015, 0.0, 0.0, 0.0],
+                    [-0.0005, 0.00015, 0.00015, 0.0, 0.0, 0.0]]
+
+
 for i in 1:length(dtimes)
     dstrain11 = dstrains11[i]
     dtime = dtimes[i]
     uniaxial_increment!(material, dstrain11, dtime)
-    #@test isapprox(tovoigt(mat.variables.stress), stresses_expected[i])
-    #@test isapprox(tovoigt(mat.drivers.strain; offdiagscale=2.0), strains_expected[i])
-
-    push!(ss,copy(tovoigt(material.variables.stress)))
-    push!(st,copy(tovoigt(material.ddrivers.strain; offdiagscale=2.0)))
-
-    push!(tt,material.ddrivers.time)
     update_material!(material)
+    expected_stress[1] = expected_S11[i]
+    @test isapprox(tovoigt(material.variables.stress), expected_stress)
+    @test isapprox(tovoigt(material.drivers.strain; offdiagscale=2.0), expected_strains[i])
 end
-println(ss)
-println(st)
-println(tt)
+
 #=
 # Define strain history
 e11 = 0.028.*vcat(Array(range(0, stop=1.5e-2, length=30)), Array(range(1.5e-2, stop=-1.5e-2, length=30)), Array(range(-1.5e-2, stop=3e-2, length=40)))

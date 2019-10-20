@@ -21,10 +21,10 @@ end
 Variables updated by UMAT routine.
 """
 @with_kw struct UmatVariableState <: AbstractMaterialState
-    NTENS :: Int = 6
+    NTENS :: Int
     NSTATV :: Int = zero(Int)
-    #jacobian :: SymmetricTensor{4,convert(Int,NTENS/2)} = zero(SymmetricTensor{4,convert(Int,NTENS/2),Float64})
-    #stress :: SymmetricTensor{2,convert(Int,NTENS/2)} = zero(SymmetricTensor{2,convert(Int,NTENS/2),Float64})
+    jacobian :: SymmetricTensor = zero(SymmetricTensor{4,convert(Int,NTENS/2),Float64})
+    stress :: SymmetricTensor = zero(SymmetricTensor{2,convert(Int,NTENS/2),Float64})
     STATEV :: Array{Float64,1} = zeros(Float64, NSTATV)
     SSE :: Array{Float64,1} = zeros(Float64, 1)
     SPD :: Array{Float64,1} = zeros(Float64, 1)
@@ -54,8 +54,9 @@ These drive evolution of the material state.
 """
 @with_kw mutable struct UmatDriverState <: AbstractMaterialState
     NTENS :: Int
-    strain :: SymmetricTensor{2,convert(Int,NTENS/2)} = zero(SymmetricTensor{2,convert(Int,NTENS/2),Float64})
+    strain :: SymmetricTensor = zero(SymmetricTensor{2,convert(Int,NTENS/2),Float64})
     time :: Float64 = zero(Float64)
+    dtime :: Float64 = zero(Float64)
     TIME_ :: Array{Float64,1} = zeros(Float64, 2)
     TEMP :: Float64 = zero(Float64)
     PREDEF :: Float64 = zero(Float64)
@@ -170,7 +171,7 @@ function Materials.integrate_material!(material::UmatMaterial)
     stress = fromvoigt(SymmetricTensor{2,convert(Int,NTENS/2)}, STRESS_)
     jacobian = fromvoigt(SymmetricTensor{4,convert(Int,NTENS/2)}, DDSDDE)
 
-    variables_new = UmatVariableState(NSTATV=NSTATV,NTENS=NTENS,stress=STRESS_,STATEV=STATEV,jacobian=jacobian,SSE=SSE,SPD=SPD,SCD=SCD,RPL=RPL,DDSDDT=DDSDDT,DRPLDE=DRPLDE,DRPLDT=DRPLDT,PNEWDT=PNEWDT)
+    variables_new = UmatVariableState(NSTATV=NSTATV,NTENS=NTENS,stress=stress,STATEV=STATEV,jacobian=jacobian,SSE=SSE,SPD=SPD,SCD=SCD,RPL=RPL,DDSDDT=DDSDDT,DRPLDE=DRPLDE,DRPLDT=DRPLDT,PNEWDT=PNEWDT)
     material.variables_new = variables_new
 end
 
