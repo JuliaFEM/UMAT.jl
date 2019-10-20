@@ -21,10 +21,10 @@ end
 Variables updated by UMAT routine.
 """
 @with_kw struct UmatVariableState <: AbstractMaterialState
-    NTENS :: Int
+    NTENS :: Int = 6
     NSTATV :: Int = zero(Int)
-    DDSDDE :: Array{Float64,2} = zeros(Float64, NTENS, NTENS)
-    STRESS_ :: Array{Float64,1} = zeros(Float64, NTENS)
+    #jacobian :: SymmetricTensor{4,convert(Int,NTENS/2)} = zero(SymmetricTensor{4,convert(Int,NTENS/2),Float64})
+    #stress :: SymmetricTensor{2,convert(Int,NTENS/2)} = zero(SymmetricTensor{2,convert(Int,NTENS/2),Float64})
     STATEV :: Array{Float64,1} = zeros(Float64, NSTATV)
     SSE :: Array{Float64,1} = zeros(Float64, 1)
     SPD :: Array{Float64,1} = zeros(Float64, 1)
@@ -36,8 +36,8 @@ Variables updated by UMAT routine.
     PNEWDT :: Array{Float64,1} = ones(Float64, 1)
     # TODO Check that shear stress components are in correct order
     # https://github.com/KristofferC/Tensors.jl/blob/e3a67612f38124c15d77ea0a2a21d0175d0a32d8/src/voigt.jl#L1
-    stress = fromvoigt(SymmetricTensor{2,convert(Int,NTENS/2)}, STRESS_)
-    jacobian = fromvoigt(SymmetricTensor{4,convert(Int,NTENS/2)}, DDSDDE)
+    # stress = fromvoigt(SymmetricTensor{2,convert(Int,NTENS/2)}, STRESS_)
+    # jacobian = fromvoigt(SymmetricTensor{4,convert(Int,NTENS/2)}, DDSDDE)
 end
 
 """
@@ -54,14 +54,15 @@ These drive evolution of the material state.
 """
 @with_kw mutable struct UmatDriverState <: AbstractMaterialState
     NTENS :: Int
-    STRAN :: Array{Float64,1} = zeros(Float64, NTENS)
-    TIME :: Array{Float64,1} = zeros(Float64, 2)
+    strain :: SymmetricTensor{2,convert(Int,NTENS/2)} = zero(SymmetricTensor{2,convert(Int,NTENS/2),Float64})
+    time :: Float64 = zero(Float64)
+    TIME_ :: Array{Float64,1} = zeros(Float64, 2)
     TEMP :: Float64 = zero(Float64)
     PREDEF :: Float64 = zero(Float64)
     # TODO Check that shear strain components are in correct order
     # https://github.com/KristofferC/Tensors.jl/blob/e3a67612f38124c15d77ea0a2a21d0175d0a32d8/src/voigt.jl#L1
-    strain = fromvoigt(SymmetricTensor{2,convert(Int,NTENS/2)}, STRAN; offdiagscale = 2.0)
-    time = TIME[2]
+    # strain = fromvoigt(SymmetricTensor{2,convert(Int,NTENS/2)}, STRAN; offdiagscale = 2.0)
+    # time = TIME[2]
 end
 
 """
@@ -150,16 +151,26 @@ Calls UMAT and updates MaterialVariableState writing the result to material.vari
 function Materials.integrate_material!(material::UmatMaterial)
     @unpack CMNAME,NDI,NSHR,NTENS,NSTATV,NPROPS,COORDS,DROT,CELENT,DFGRD0,DFGRD1,NOEL,NPT,LAYER,KSPT,KSTEP,KINC = material.umat_other
     @unpack PROPS = material.parameters
-    STRAN, TIME, TEMP, PREDEF = material.drivers.STRAN, material.drivers.TIME, material.drivers.TEMP, material.drivers.PREDEF
-    DSTRAN, DTIME, DTEMP, DPRED = material.ddrivers.STRAN, material.drivers.TIME[1], material.ddrivers.TEMP, material.ddrivers.PREDEF
-    @unpack STRESS_,STATEV,DDSDDE,SSE,SPD,SCD,RPL,DDSDDT,DRPLDE,DRPLDT,PNEWDT = material.variables
+    strain, time, TEMP, PREDEF = material.drivers.strain, material.drivers.time, material.drivers.TEMP, material.drivers.PREDEF
+    dstrain, dtime, DTEMP, DPRED = material.ddrivers.strain, material.drivers.dtime, material.ddrivers.TEMP, material.ddrivers.PREDEF
+    @unpack stress,STATEV,jacobian,SSE,SPD,SCD,RPL,DDSDDT,DRPLDE,DRPLDT,PNEWDT = material.variables
 
+    # TODO need to replace with toabaqus etc.
+    STRAN = tovoigt(strain; offdiagscale = 2.0)
+    DSTRAN = tovoigt(dstrain; offdiagscale = 2.0)
+    STRESS_ = tovoigt(stress)
+    DDSDDE = tovoigt(jacobian)
+    TIME_ = [(time - floor(time)) time]
+    DTIME_ = dtime
     call_umat!(material.behaviour, material.lib_path, STRESS_, STATEV, DDSDDE, SSE, SPD, SCD, RPL, DDSDDT, DRPLDE, DRPLDT,
-        STRAN, DSTRAN, TIME, DTIME, TEMP, DTEMP, PREDEF, DPRED, CMNAME, NDI, NSHR,
+        STRAN, DSTRAN, TIME_, DTIME_, TEMP, DTEMP, PREDEF, DPRED, CMNAME, NDI, NSHR,
         NTENS, NSTATV, PROPS, NPROPS, COORDS, DROT, PNEWDT, CELENT, DFGRD0, DFGRD1,
         NOEL, NPT, LAYER, KSPT, KSTEP, KINC)
 
-    variables_new = UmatVariableState(NSTATV=NSTATV,NTENS=NTENS,STRESS_=STRESS_,STATEV=STATEV,DDSDDE=DDSDDE,SSE=SSE,SPD=SPD,SCD=SCD,RPL=RPL,DDSDDT=DDSDDT,DRPLDE=DRPLDE,DRPLDT=DRPLDT,PNEWDT=PNEWDT)
+    stress = fromvoigt(SymmetricTensor{2,convert(Int,NTENS/2)}, STRESS_)
+    jacobian = fromvoigt(SymmetricTensor{4,convert(Int,NTENS/2)}, DDSDDE)
+
+    variables_new = UmatVariableState(NSTATV=NSTATV,NTENS=NTENS,stress=STRESS_,STATEV=STATEV,jacobian=jacobian,SSE=SSE,SPD=SPD,SCD=SCD,RPL=RPL,DDSDDT=DDSDDT,DRPLDE=DRPLDE,DRPLDT=DRPLDT,PNEWDT=PNEWDT)
     material.variables_new = variables_new
 end
 
