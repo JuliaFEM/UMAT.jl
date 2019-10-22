@@ -41,7 +41,7 @@
   dstran(2) = -PROPS(10) * dstran(3)  ! Venymainkrementti (vakio)
   dstran(1) = -PROPS(10) * dstran(3)  ! Venymainkrementti (vakio)
 """
-function DruckerPragerMaterial(Sigma_t = 200.,
+function DruckerPragerMaterial(;Sigma_t = 200.,
                                Sigma_c = 200.,
                                K_Zero = 100.,
                                C_const = 100.,
