@@ -9,6 +9,8 @@ using Parameters
 using LinearAlgebra
 using Tensors
 
+const abaqus = [1 4 6; 0 2 5; 0 0 3]
+
 pkg_dir = dirname(Base.find_package("UMAT"))
 if Sys.iswindows()
     lib_dir = joinpath(pkg_dir,"..","deps","usr","bin")
@@ -34,10 +36,6 @@ Variables updated by UMAT routine.
     DRPLDE :: Array{Float64,1} = zeros(Float64, NTENS)
     DRPLDT :: Array{Float64,1} = zeros(Float64, 1)
     PNEWDT :: Array{Float64,1} = ones(Float64, 1)
-    # TODO Check that shear stress components are in correct order
-    # https://github.com/KristofferC/Tensors.jl/blob/e3a67612f38124c15d77ea0a2a21d0175d0a32d8/src/voigt.jl#L1
-    # stress = fromvoigt(SymmetricTensor{2,convert(Int,NTENS/2)}, STRESS_)
-    # jacobian = fromvoigt(SymmetricTensor{4,convert(Int,NTENS/2)}, DDSDDE)
 end
 
 """
@@ -60,10 +58,6 @@ These drive evolution of the material state.
     TIME_ :: Array{Float64,1} = zeros(Float64, 2)
     TEMP :: Float64 = zero(Float64)
     PREDEF :: Float64 = zero(Float64)
-    # TODO Check that shear strain components are in correct order
-    # https://github.com/KristofferC/Tensors.jl/blob/e3a67612f38124c15d77ea0a2a21d0175d0a32d8/src/voigt.jl#L1
-    # strain = fromvoigt(SymmetricTensor{2,convert(Int,NTENS/2)}, STRAN; offdiagscale = 2.0)
-    # time = TIME[2]
 end
 
 """
@@ -121,7 +115,8 @@ end
 """
 Wrapper function to ccall the UMAT subroutine from the compiled shared library.
 """
-function call_umat!(func_umat::Symbol, lib_path::String, STRESS_,STATEV,DDSDDE,SSE,SPD,SCD,RPL,DDSDDT,DRPLDE,DRPLDT,
+function call_umat!(func_umat::Symbol, lib_path::String, STRESS_,STATEV,DDSDDE,
+        SSE,SPD,SCD,RPL,DDSDDT,DRPLDE,DRPLDT,
         STRAN,DSTRAN,TIME,DTIME,TEMP,DTEMP,PREDEF,DPRED,CMNAME,NDI,NSHR,
         NTENS,NSTATV,PROPS,NPROPS,COORDS,DROT,PNEWDT,CELENT,DFGRD0,DFGRD1,
         NOEL,NPT,LAYER,KSPT,KSTEP,KINC)
@@ -130,16 +125,17 @@ function call_umat!(func_umat::Symbol, lib_path::String, STRESS_,STATEV,DDSDDE,S
     sym_umat = Libdl.dlsym(lib_umat, func_umat) # Get a symbol for the umat function to call.
 
     ccall(sym_umat, Nothing,
-        (Ref{Float64},Ref{Float64},Ref{Float64},Ref{Float64},Ref{Float64},Ref{Float64},Ref{Float64},Ref{Float64},Ref{Float64},Ref{Float64},
-        Ref{Float64},Ref{Float64},Ref{Float64},Ref{Float64},Ref{Float64},Ref{Float64},Ref{Float64},Ref{Float64},Ptr{Cuchar},#Csize_t,
-        Ref{Int},Ref{Int},
-        Ref{Int},Ref{Int},Ref{Float64},Ref{Int},Ref{Float64},Ref{Float64},Ref{Float64},Ref{Float64},Ref{Float64},Ref{Float64},
-        Ref{Int},Ref{Int},Ref{Int},Ref{Int},Ref{Int},Ref{Int}),
-        STRESS_,STATEV,DDSDDE,SSE,SPD,SCD,RPL,DDSDDT,DRPLDE,DRPLDT,
-        STRAN,DSTRAN,TIME,DTIME,TEMP,DTEMP,PREDEF,DPRED,CMNAME,#sizeof(CMNAME),
-        NDI,NSHR,
-        NTENS,NSTATV,PROPS,NPROPS,COORDS,DROT,PNEWDT,CELENT,DFGRD0,DFGRD1,
-        NOEL,NPT,LAYER,KSPT,KSTEP,KINC)
+         (Ref{Float64},Ref{Float64},Ref{Float64},Ref{Float64},Ref{Float64},
+          Ref{Float64},Ref{Float64},Ref{Float64},Ref{Float64},Ref{Float64},
+          Ref{Float64},Ref{Float64},Ref{Float64},Ref{Float64},Ref{Float64},
+          Ref{Float64},Ref{Float64},Ref{Float64},Ptr{Cuchar},Ref{Int},Ref{Int},
+          Ref{Int},Ref{Int},Ref{Float64},Ref{Int},Ref{Float64},Ref{Float64},
+          Ref{Float64},Ref{Float64},Ref{Float64},Ref{Float64},
+          Ref{Int},Ref{Int},Ref{Int},Ref{Int},Ref{Int},Ref{Int}),
+         STRESS_,STATEV,DDSDDE,SSE,SPD,SCD,RPL,DDSDDT,DRPLDE,DRPLDT,
+         STRAN,DSTRAN,TIME,DTIME,TEMP,DTEMP,PREDEF,DPRED,CMNAME,NDI,NSHR,
+         NTENS,NSTATV,PROPS,NPROPS,COORDS,DROT,PNEWDT,CELENT,DFGRD0,DFGRD1,
+         NOEL,NPT,LAYER,KSPT,KSTEP,KINC)
 
     Libdl.dlclose(lib_umat) # Close the library explicitly.
 
@@ -157,10 +153,10 @@ function Materials.integrate_material!(material::UmatMaterial)
     @unpack stress,STATEV,jacobian,SSE,SPD,SCD,RPL,DDSDDT,DRPLDE,DRPLDT,PNEWDT = material.variables
 
     # TODO need to replace with toabaqus etc.
-    STRAN = tovoigt(strain; offdiagscale = 2.0)
-    DSTRAN = tovoigt(dstrain; offdiagscale = 2.0)
-    STRESS_ = tovoigt(stress)
-    DDSDDE = tovoigt(jacobian)
+    STRAN = tovoigt(strain; order=abaqus, offdiagscale = 2.0)
+    DSTRAN = tovoigt(dstrain; order=abaqus, offdiagscale = 2.0)
+    STRESS_ = tovoigt(stress, order=abaqus)
+    DDSDDE = tovoigt(jacobian, order=abaqus)
     TIME_ = [(time - floor(time)) time]
     DTIME_ = dtime
     call_umat!(material.behaviour, material.lib_path, STRESS_, STATEV, DDSDDE, SSE, SPD, SCD, RPL, DDSDDT, DRPLDE, DRPLDT,
@@ -168,10 +164,13 @@ function Materials.integrate_material!(material::UmatMaterial)
         NTENS, NSTATV, PROPS, NPROPS, COORDS, DROT, PNEWDT, CELENT, DFGRD0, DFGRD1,
         NOEL, NPT, LAYER, KSPT, KSTEP, KINC)
 
-    stress = fromvoigt(SymmetricTensor{2,convert(Int,NTENS/2)}, STRESS_)
-    jacobian = fromvoigt(SymmetricTensor{4,convert(Int,NTENS/2)}, DDSDDE)
+    stress = fromvoigt(SymmetricTensor{2,convert(Int,NTENS/2)}, STRESS_, order=abaqus)
+    jacobian = fromvoigt(SymmetricTensor{4,convert(Int,NTENS/2)}, DDSDDE, order=abaqus)
 
-    variables_new = UmatVariableState(NSTATV=NSTATV,NTENS=NTENS,stress=stress,STATEV=STATEV,jacobian=jacobian,SSE=SSE,SPD=SPD,SCD=SCD,RPL=RPL,DDSDDT=DDSDDT,DRPLDE=DRPLDE,DRPLDT=DRPLDT,PNEWDT=PNEWDT)
+    variables_new = UmatVariableState(NSTATV=NSTATV,NTENS=NTENS,stress=stress,
+                                      STATEV=STATEV,jacobian=jacobian,SSE=SSE,
+                                      SPD=SPD,SCD=SCD,RPL=RPL,DDSDDT=DDSDDT,
+                                      DRPLDE=DRPLDE,DRPLDT=DRPLDT,PNEWDT=PNEWDT)
     material.variables_new = variables_new
 end
 
